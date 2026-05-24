@@ -1,0 +1,11 @@
+pandas
+numpy
+pynput
+scikit-learn
+xgboost
+joblib
+customtkinter
+Pillow
+requests
+flask
+flask-cors

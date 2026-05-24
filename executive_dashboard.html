@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스트레스 탐지 프로그램 - 경영진 대시보드</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #eef3f8;
+            --surface: #ffffff;
+            --line: #e5e9f0;
+            --text: #182230;
+            --muted: #667085;
+            --soft: #f1f5f9;
+            --blue: #2563eb;
+            --blue-soft: #eaf1ff;
+            --green: #16803c;
+            --green-soft: #eaf7ee;
+            --orange: #c2410c;
+            --orange-soft: #fff3e8;
+            --red: #b42318;
+            --red-soft: #feeceb;
+            --shadow: 0 14px 34px rgba(16, 24, 40, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+            background:
+                radial-gradient(circle at top right, rgba(22, 128, 60, 0.10), transparent 30%),
+                radial-gradient(circle at top left, rgba(37, 99, 235, 0.10), transparent 34%),
+                linear-gradient(180deg, #f7faff 0%, var(--bg) 46%, #e8eef6 100%);
+            color: var(--text);
+        }
+
+        .page {
+            width: min(1240px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 24px 0 36px;
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 16px;
+            align-items: start;
+            margin-bottom: 16px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .brand-mark {
+            width: 40px;
+            height: 40px;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(135deg, #2563eb, #16a34a);
+            color: #fff;
+            font-weight: 900;
+            flex: 0 0 auto;
+        }
+
+        h1,
+        h2,
+        h3,
+        p {
+            margin: 0;
+        }
+
+        h1 {
+            font-size: clamp(22px, 2.4vw, 30px);
+            line-height: 1.25;
+        }
+
+        .notice {
+            color: var(--muted);
+            line-height: 1.6;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .server-status {
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: var(--blue-soft);
+            color: #174ea6;
+            font-size: 13px;
+            font-weight: 800;
+            white-space: nowrap;
+            border: 1px solid #c7d7fe;
+        }
+
+        .privacy-banner {
+            margin-bottom: 16px;
+            padding: 13px 15px;
+            border: 1px solid #d9e6ff;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #edf5ff 0%, #eefdf3 100%);
+            color: #174ea6;
+            line-height: 1.6;
+            font-weight: 700;
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .panel,
+        .metric,
+        .dept-card {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            box-shadow: var(--shadow);
+        }
+
+        .metric {
+            padding: 16px;
+            min-height: 116px;
+            display: grid;
+            align-content: space-between;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        }
+
+        .metric-label {
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 800;
+            line-height: 1.45;
+        }
+
+        .metric-value {
+            margin-top: 10px;
+            font-size: clamp(22px, 2.6vw, 32px);
+            font-weight: 900;
+        }
+
+        .overview-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .panel {
+            padding: 18px;
+            background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+        }
+
+        .section-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .section-title {
+            font-size: 17px;
+            font-weight: 900;
+        }
+
+        .rank-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .rank-row {
+            display: grid;
+            grid-template-columns: minmax(95px, 1fr) minmax(120px, 1.6fr) 64px;
+            gap: 10px;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .bar-track {
+            height: 10px;
+            border-radius: 999px;
+            background: var(--soft);
+            overflow: hidden;
+        }
+
+        .bar {
+            height: 100%;
+            border-radius: 999px;
+            background: var(--blue);
+        }
+
+        .dept-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .dept-card {
+            padding: 16px;
+            display: grid;
+            gap: 14px;
+            min-width: 0;
+        }
+
+        .dept-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .dept-name {
+            font-size: 17px;
+            font-weight: 900;
+            line-height: 1.35;
+        }
+
+        .score-badge {
+            padding: 8px 10px;
+            border-radius: 14px;
+            background: var(--green-soft);
+            color: var(--green);
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .score-mid {
+            background: var(--orange-soft);
+            color: var(--orange);
+        }
+
+        .score-high {
+            background: var(--red-soft);
+            color: var(--red);
+        }
+
+        .ratio-row {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .ratio {
+            background: #f8fafc;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 9px;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.35;
+        }
+
+        .ratio strong {
+            display: block;
+            color: var(--text);
+            font-size: 17px;
+            margin-top: 5px;
+        }
+
+        .chart-box {
+            height: 160px;
+            min-width: 0;
+        }
+
+        .latest {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        @media (max-width: 1120px) {
+            .dept-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 900px) {
+            .hero,
+            .summary,
+            .overview-grid,
+            .dept-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .server-status {
+                width: fit-content;
+            }
+        }
+
+        @media (max-width: 620px) {
+            .page {
+                width: min(100% - 20px, 1240px);
+                padding-top: 14px;
+            }
+
+            .rank-row {
+                grid-template-columns: 1fr;
+            }
+
+            .ratio-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="page">
+        <section class="hero">
+            <div class="brand">
+                <div class="brand-mark">M</div>
+                <div>
+                    <h1>스트레스 탐지 프로그램 경영진 대시보드</h1>
+                    <p class="notice">전체 부서의 스트레스 가능성 평균, 최근 추세, 상태 비율을 요약합니다.</p>
+                </div>
+            </div>
+            <div id="server-status" class="server-status">데이터 연결 확인 중</div>
+        </section>
+
+        <section class="privacy-banner">
+            경영진 모드는 개인의 입력 내용이나 원문 데이터를 표시하지 않고, 부서 단위의 평균 추세만 제공합니다.
+        </section>
+
+        <section class="summary">
+            <article class="metric">
+                <div class="metric-label">전체 평균 스트레스 가능성 점수</div>
+                <div class="metric-value"><span id="overall-score">0</span> / 10</div>
+            </article>
+            <article class="metric">
+                <div class="metric-label">스트레스 가능성 높음 비율</div>
+                <div class="metric-value"><span id="overall-stress">0</span>%</div>
+            </article>
+            <article class="metric">
+                <div class="metric-label">집중 입력 상태 비율</div>
+                <div class="metric-value"><span id="overall-focus">0</span>%</div>
+            </article>
+            <article class="metric">
+                <div class="metric-label">최근 측정 시간</div>
+                <div class="metric-value" id="latest-time">-</div>
+            </article>
+        </section>
+
+        <section class="overview-grid">
+            <article class="panel">
+                <div class="section-head">
+                    <h2 class="section-title">부서별 평균 순위</h2>
+                    <span class="notice">상위 5개</span>
+                </div>
+                <div id="rank-list" class="rank-list"></div>
+            </article>
+            <article class="panel">
+                <div class="section-head">
+                    <h2 class="section-title">전체 평균 추세</h2>
+                    <span class="notice">부서 평균 기반</span>
+                </div>
+                <div class="chart-box" style="height:230px;"><canvas id="overallTrendChart"></canvas></div>
+            </article>
+        </section>
+
+        <section id="department-grid" class="dept-grid"></section>
+    </main>
+
+    <script>
+        const API_URL = "http://127.0.0.1:5000/api/get_executive_report";
+        const weekLabels = ["4주 전", "3주 전", "2주 전", "1주 전", "현재"];
+        const charts = {};
+        let overallTrendChart;
+
+        const fallbackDepartments = [
+            { dept_name: "1. 인사부", avg_score: 3.2, history: [2.8, 3.0, 3.1, 3.0], normal_ratio: 70, focus_ratio: 20, stress_ratio: 10, last_measured_at: "-" },
+            { dept_name: "2. 재무부", avg_score: 0, history: [0, 0, 0, 0], normal_ratio: 0, focus_ratio: 0, stress_ratio: 0, last_measured_at: "-" },
+            { dept_name: "3. 마케팅부", avg_score: 4.1, history: [3.5, 3.9, 4.0, 4.2], normal_ratio: 54, focus_ratio: 32, stress_ratio: 14, last_measured_at: "-" },
+            { dept_name: "4. 생산부", avg_score: 5.0, history: [4.4, 4.8, 5.1, 4.9], normal_ratio: 42, focus_ratio: 38, stress_ratio: 20, last_measured_at: "-" },
+            { dept_name: "5. 연구개발부", avg_score: 0, history: [0, 0, 0, 0], normal_ratio: 0, focus_ratio: 0, stress_ratio: 0, last_measured_at: "-" },
+            { dept_name: "6. 구매부", avg_score: 0, history: [0, 0, 0, 0], normal_ratio: 0, focus_ratio: 0, stress_ratio: 0, last_measured_at: "-" },
+            { dept_name: "7. IT부", avg_score: 3.6, history: [3.2, 3.1, 3.5, 3.7], normal_ratio: 62, focus_ratio: 30, stress_ratio: 8, last_measured_at: "-" },
+            { dept_name: "8. 법무부", avg_score: 0, history: [0, 0, 0, 0], normal_ratio: 0, focus_ratio: 0, stress_ratio: 0, last_measured_at: "-" },
+            { dept_name: "9. 영업부", avg_score: 0, history: [0, 0, 0, 0], normal_ratio: 0, focus_ratio: 0, stress_ratio: 0, last_measured_at: "-" }
+        ];
+
+        async function loadDepartments() {
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) throw new Error("server offline");
+                document.getElementById("server-status").innerText = "실시간 데이터 연결됨";
+                return await response.json();
+            } catch (error) {
+                document.getElementById("server-status").innerText = "예시 데이터로 미리보기";
+                return fallbackDepartments;
+            }
+        }
+
+        function scoreClass(score) {
+            if (score >= 7) return "score-high";
+            if (score >= 4.5) return "score-mid";
+            return "";
+        }
+
+        function average(values) {
+            return values.length ? values.reduce((a, b) => a + Number(b || 0), 0) / values.length : 0;
+        }
+
+        function renderSummary(departments) {
+            const scores = departments.map(d => Number(d.avg_score || 0));
+            const overall = average(scores);
+            const stress = average(departments.map(d => Number(d.stress_ratio || 0)));
+            const focus = average(departments.map(d => Number(d.focus_ratio || 0)));
+            const latest = departments.map(d => d.last_measured_at).filter(v => v && v !== "-").sort().pop() || "-";
+            document.getElementById("overall-score").innerText = overall.toFixed(1);
+            document.getElementById("overall-stress").innerText = stress.toFixed(1);
+            document.getElementById("overall-focus").innerText = focus.toFixed(1);
+            document.getElementById("latest-time").innerText = latest;
+        }
+
+        function renderRanking(departments) {
+            const rankList = document.getElementById("rank-list");
+            const sorted = [...departments].sort((a, b) => Number(b.avg_score || 0) - Number(a.avg_score || 0)).slice(0, 5);
+            rankList.innerHTML = sorted.map(dept => {
+                const score = Number(dept.avg_score || 0);
+                return `
+                    <div class="rank-row">
+                        <strong>${dept.dept_name}</strong>
+                        <div class="bar-track"><div class="bar" style="width:${Math.min(score * 10, 100)}%"></div></div>
+                        <strong>${score.toFixed(1)} / 10</strong>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        function renderOverallTrend(departments) {
+            const values = weekLabels.map((_, index) => {
+                const scores = departments.map(dept => {
+                    const history = dept.history || [0, 0, 0, 0];
+                    return index === weekLabels.length - 1 ? Number(dept.avg_score || 0) : Number(history[index] || 0);
+                });
+                return Number(average(scores).toFixed(1));
+            });
+            const canvas = document.getElementById("overallTrendChart");
+            overallTrendChart?.destroy();
+            overallTrendChart = new Chart(canvas.getContext("2d"), {
+                type: "line",
+                data: {
+                    labels: weekLabels,
+                    datasets: [{
+                        data: values,
+                        borderColor: "#2563eb",
+                        backgroundColor: "rgba(37, 99, 235, 0.10)",
+                        tension: 0.35,
+                        fill: true,
+                        pointRadius: 4,
+                        pointBackgroundColor: "#2563eb",
+                        pointBorderColor: "#ffffff",
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: chartOptions()
+            });
+        }
+
+        function cardHtml(dept, index) {
+            const score = Number(dept.avg_score || 0);
+            return `
+                <article class="dept-card">
+                    <div class="dept-head">
+                        <div class="dept-name">${dept.dept_name}</div>
+                        <div class="score-badge ${scoreClass(score)}">${score.toFixed(1)} / 10</div>
+                    </div>
+                    <div class="ratio-row">
+                        <div class="ratio">정상 / 비스트레스<strong>${Number(dept.normal_ratio || 0).toFixed(1)}%</strong></div>
+                        <div class="ratio">집중 입력 상태<strong>${Number(dept.focus_ratio || 0).toFixed(1)}%</strong></div>
+                        <div class="ratio">스트레스 가능성 높음<strong>${Number(dept.stress_ratio || 0).toFixed(1)}%</strong></div>
+                    </div>
+                    <div class="latest">최근 측정 시간: ${dept.last_measured_at || "-"}</div>
+                    <div class="chart-box"><canvas id="dept-chart-${index}"></canvas></div>
+                </article>
+            `;
+        }
+
+        function chartOptions() {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { backgroundColor: "#182230", padding: 12 }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: "#667085" } },
+                    y: { min: 0, max: 10, ticks: { stepSize: 2, color: "#667085" }, grid: { color: "#eef2f7" } }
+                }
+            };
+        }
+
+        function renderCards(departments) {
+            const grid = document.getElementById("department-grid");
+            grid.innerHTML = departments.map(cardHtml).join("");
+            departments.forEach((dept, index) => {
+                const canvas = document.getElementById(`dept-chart-${index}`);
+                if (!canvas) return;
+                const values = [...(dept.history || [0, 0, 0, 0]), Number(dept.avg_score || 0)];
+                charts[index]?.destroy();
+                charts[index] = new Chart(canvas.getContext("2d"), {
+                    type: "line",
+                    data: {
+                        labels: weekLabels,
+                        datasets: [{
+                            data: values,
+                            borderColor: "#2563eb",
+                            backgroundColor: "rgba(37, 99, 235, 0.08)",
+                            tension: 0.35,
+                            fill: true,
+                            pointRadius: 3,
+                            pointBackgroundColor: "#2563eb",
+                            pointBorderColor: "#ffffff",
+                            pointBorderWidth: 2
+                        }]
+                    },
+                    options: chartOptions()
+                });
+            });
+        }
+
+        async function refresh() {
+            const departments = await loadDepartments();
+            renderSummary(departments);
+            renderRanking(departments);
+            renderOverallTrend(departments);
+            renderCards(departments);
+        }
+
+        refresh();
+        setInterval(refresh, 5000);
+    </script>
+</body>
+
+</html>
